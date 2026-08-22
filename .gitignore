@@ -1,0 +1,21 @@
+# bağımlılıklar
+/node_modules
+
+# Next.js derleme çıktıları
+/.next/
+/out/
+/build
+
+# ortam değişkenleri — GERÇEK API ANAHTARI BURADA, ASLA COMMIT ETME
+.env
+.env*.local
+
+# günlük / işletim sistemi
+*.log
+npm-debug.log*
+.DS_Store
+
+# vercel / typescript
+.vercel
+*.tsbuildinfo
+next-env.d.ts

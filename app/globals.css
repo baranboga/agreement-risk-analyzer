@@ -1,0 +1,304 @@
+/* app/globals.css
+   Sade, tek dosya stil. Framework yok; okunması kolay olsun diye düz CSS. */
+
+:root {
+  --bg: #0f1117;
+  --panel: #171a23;
+  --panel-2: #1e222d;
+  --border: #2a2f3a;
+  --text: #e6e8ee;
+  --muted: #9aa3b2;
+  --accent: #4f8cff;
+  --dusuk: #2ecc71;
+  --orta: #f1c40f;
+  --yuksek: #ff5c5c;
+  --hata: #ff7676;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial,
+    sans-serif;
+  line-height: 1.5;
+}
+
+.kapsayici {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+h1 {
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+
+.altbaslik {
+  color: var(--muted);
+  margin: 0 0 20px;
+  font-size: 14px;
+}
+
+/* Üstteki canlı gösterge şeridi */
+.gosterge {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.gosterge .kutu {
+  display: flex;
+  flex-direction: column;
+  min-width: 110px;
+}
+
+.gosterge .etiket {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.gosterge .deger {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.gosterge .rozet {
+  font-size: 10px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+.gosterge .rozet.kesin {
+  color: var(--dusuk);
+}
+
+/* Giriş alanı */
+textarea {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  padding: 12px 14px;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.satir {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.satir .esne {
+  flex: 1;
+}
+
+label.secim {
+  color: var(--muted);
+  font-size: 13px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+select {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+button.birincil {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+button.tehlike {
+  background: transparent;
+  border-color: var(--yuksek);
+  color: var(--yuksek);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.baglanti {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 0;
+  font-size: 13px;
+}
+
+/* Hata kutuları — kind'e göre renkli sol şerit */
+.hatalar {
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hata-kutu {
+  background: rgba(255, 92, 92, 0.08);
+  border: 1px solid rgba(255, 92, 92, 0.35);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.hata-kutu .tur {
+  font-weight: 700;
+  margin-right: 6px;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+/* Sonuç kartları */
+.kartlar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.kart {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.kart.dusuk {
+  border-left-color: var(--dusuk);
+}
+.kart.orta {
+  border-left-color: var(--orta);
+}
+.kart.yuksek {
+  border-left-color: var(--yuksek);
+}
+
+.kart .ust {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.risk-etiket {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.risk-etiket.dusuk {
+  background: rgba(46, 204, 113, 0.15);
+  color: var(--dusuk);
+}
+.risk-etiket.orta {
+  background: rgba(241, 196, 15, 0.15);
+  color: var(--orta);
+}
+.risk-etiket.yuksek {
+  background: rgba(255, 92, 92, 0.15);
+  color: var(--yuksek);
+}
+
+.kart blockquote {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  background: var(--panel-2);
+  border-radius: 8px;
+  font-style: italic;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.kart .satir-etiket {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 8px;
+}
+
+.kart .sure {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* Tool günlüğü */
+.tool-gunlugu {
+  margin-top: 24px;
+  border-top: 1px dashed var(--border);
+  padding-top: 12px;
+}
+
+.tool-satir {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.tool-satir b {
+  color: var(--text);
+}
+
+.bos {
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+  padding: 32px 0;
+}
+
+.baslik-satir {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
