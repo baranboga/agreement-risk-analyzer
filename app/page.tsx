@@ -15,9 +15,10 @@
 //          (bkz. lib/partial.ts).
 // -----------------------------------------------------------------------------
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnalizSchema, type Madde } from "@/lib/schema";
 import { tamamlananMaddeler } from "@/lib/partial";
+import { ORNEKLER } from "@/lib/ornekler";
 import {
   FIYATLAR,
   maliyetHesapla,
@@ -39,17 +40,17 @@ type Kullanim = {
 // Kartlar hem mod A (tam Madde) hem mod B (tamamlanmış nesne) verisini gösterir.
 type MaddeGorunum = Partial<Madde> & Record<string, unknown>;
 
-const ORNEK_METIN = `HİZMET SÖZLEŞMESİ
+// Süre ölçümleri (milisaniye cinsinden, hepsi client tarafında).
+//   ttft    -> istek gönderiminden stream'in İLK chunk'ına kadar
+//   ilkKart -> istek gönderiminden ilk kartın DOM'a BOYANDIĞI ana kadar
+//   toplam  -> istek gönderiminden stream kapandığı ana kadar
+type Sureler = { ttft: number | null; ilkKart: number | null; toplam: number | null };
 
-1. Ödeme: Hizmet bedeli, faturanın düzenlenmesinden itibaren 15 iş günü içinde ödenir. Geç ödemede aylık %10 gecikme faizi uygulanır.
-
-2. Fesih: Taraflardan biri, herhangi bir gerekçe göstermeksizin ve tazminat ödemeksizin sözleşmeyi tek taraflı olarak dilediği zaman feshedebilir.
-
-3. Gizlilik: Yüklenici, edindiği tüm ticari sırları süresiz olarak gizli tutmakla yükümlüdür; bu yükümlülüğün ihlali halinde 500.000 TL cezai şart ödenir.
-
-4. Sorumluluk: Yüklenici, her türlü doğrudan ve dolaylı zarardan sınırsız olarak sorumludur.
-
-5. Teslim: İşin teslimi, imza tarihinden itibaren 30 takvim günü içinde yapılır.`;
+// ms -> "9.2s" (saniye, tek ondalık). Değer yoksa "—".
+function saniye(ms: number | null): string {
+  if (ms == null) return "—";
+  return (ms / 1000).toFixed(1) + "s";
+}
 
 const RISK_ETIKET: Record<string, string> = {
   dusuk: "Düşük",
@@ -65,7 +66,8 @@ const HATA_BASLIK: Record<string, string> = {
 };
 
 export default function Sayfa() {
-  const [metin, setMetin] = useState(ORNEK_METIN);
+  const [ornekId, setOrnekId] = useState(ORNEKLER[0].id);
+  const [metin, setMetin] = useState(ORNEKLER[0].metin);
   const [model, setModel] = useState<ModelAdi>("gpt-4.1");
   const [mod, setMod] = useState<"A" | "B">("B");
 
@@ -79,8 +81,41 @@ export default function Sayfa() {
   const [canliPrompt, setCanliPrompt] = useState(0);
   const [canliCompletion, setCanliCompletion] = useState(0);
 
+  // Süre ölçümleri.
+  const [sureler, setSureler] = useState<Sureler>({
+    ttft: null,
+    ilkKart: null,
+    toplam: null,
+  });
+
   // Durdur butonu bu controller'ı iptal eder.
   const abortRef = useRef<AbortController | null>(null);
+
+  // Ölçüm referansları. performance.now() KULLANIYORUZ (Date.now() değil):
+  // performance.now() monotonik saattir, sistem saati değişse bile geriye
+  // gitmez; süre farkı ölçümü için doğru araç.
+  const baslangicRef = useRef<number>(0); // istek gönderim anı
+  const ttftAlindiRef = useRef(false); // TTFT bir kez ölçülsün
+  const ilkKartAlindiRef = useRef(false); // ilk kart bir kez ölçülsün
+
+  // İLK KART ölçümü — neden burada, tara() içinde değil:
+  // "İlk kart" süresini setMaddeler çağrıldığı an (veri parse edildiği an)
+  // DEĞİL, kartın gerçekten EKRANA BOYANDIĞI an almalıyız. Bu effect, React
+  // maddeler'i DOM'a commit ettikten SONRA çalışır; requestAnimationFrame ise
+  // ölçümü tarayıcının bir sonraki boyamasına kilitler. Böylece damga, kartın
+  // fiilen görünür olduğu ana denk gelir.
+  useEffect(() => {
+    if (maddeler.length > 0 && !ilkKartAlindiRef.current) {
+      ilkKartAlindiRef.current = true; // tekrar planlamayı engelle
+      // NOT: rAF'i bilerek İPTAL ETMİYORUZ. Mod B'de maddeler hızla değişir;
+      // bir cleanup ile iptal etsek, bekleyen ölçüm çağrısı boyamadan önce
+      // düşerdi. Guard sayesinde tarama başına yalnızca bir rAF planlanır.
+      requestAnimationFrame(() => {
+        const t = performance.now() - baslangicRef.current;
+        setSureler((s) => ({ ...s, ilkKart: t }));
+      });
+    }
+  }, [maddeler]);
 
   // Gösterilecek değerler: kesin usage varsa onu, yoksa canlı tahmini kullan.
   const gosterim = useMemo(() => {
@@ -110,11 +145,19 @@ export default function Sayfa() {
     setCanliCompletion(0);
     setCalisiyor(true);
 
+    // Ölçümleri sıfırla ve guard'ları serbest bırak.
+    setSureler({ ttft: null, ilkKart: null, toplam: null });
+    ttftAlindiRef.current = false;
+    ilkKartAlindiRef.current = false;
+
     const controller = new AbortController();
     abortRef.current = controller;
 
     // State asenkron güncellendiği için akış boyunca LOKAL bir birikimci tutuyoruz.
     let ham = "";
+
+    // ÖLÇÜM BAŞLANGICI: "istek gönderildiği an". fetch'ten hemen önce damgala.
+    baslangicRef.current = performance.now();
 
     try {
       const res = await fetch("/api/analyze", {
@@ -133,6 +176,15 @@ export default function Sayfa() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+
+        // TTFT: stream'den GERÇEK ilk chunk geldiği an (sunucu içi süre değil,
+        // kullanıcının beklediği ağ + üretim süresi). Yalnızca bir kez ölç.
+        if (!ttftAlindiRef.current) {
+          ttftAlindiRef.current = true;
+          const t = performance.now() - baslangicRef.current;
+          setSureler((s) => ({ ...s, ttft: t }));
+        }
+
         tampon += decoder.decode(value, { stream: true });
 
         // SSE olayları \n\n ile ayrılır.
@@ -186,6 +238,12 @@ export default function Sayfa() {
         setHatalar((h) => [...h, { kind: "bilinmeyen", mesaj: err.message }]);
       }
     } finally {
+      // TOPLAM: stream kapandığı an (normal bitiş, hata veya iptal — üçü de
+      // buraya düşer, yani iptalde "o ana kadarki toplam" da ekranda kalır).
+      // Fonksiyonel güncelleme ile daha önce ölçülen ttft/ilkKart korunur.
+      const t = performance.now() - baslangicRef.current;
+      setSureler((s) => ({ ...s, toplam: t }));
+
       setCalisiyor(false);
       abortRef.current = null;
     }
@@ -226,6 +284,15 @@ export default function Sayfa() {
     // İsteği gerçekten iptal et. Bu, client fetch'i ve zincirleme olarak
     // sunucudaki upstream OpenAI fetch'ini de abort eder.
     abortRef.current?.abort();
+  }
+
+  // Örnek seçildiğinde metni textarea'ya yükle. Kullanıcı sonra serbestçe
+  // düzenleyebilir; seçim yalnızca başlangıç metnini belirler.
+  function ornekSec(id: string) {
+    const o = ORNEKLER.find((x) => x.id === id);
+    if (!o) return;
+    setOrnekId(id);
+    setMetin(o.metin);
   }
 
   const bosMu = !metin.trim();
@@ -271,6 +338,18 @@ export default function Sayfa() {
             </span>
           </span>
         </div>
+        <div className="kutu">
+          <span className="etiket">TTFT</span>
+          <span className="deger">{saniye(sureler.ttft)}</span>
+        </div>
+        <div className="kutu">
+          <span className="etiket">İlk Kart</span>
+          <span className="deger">{saniye(sureler.ilkKart)}</span>
+        </div>
+        <div className="kutu">
+          <span className="etiket">Toplam</span>
+          <span className="deger">{saniye(sureler.toplam)}</span>
+        </div>
       </div>
 
       {/* Giriş */}
@@ -282,6 +361,21 @@ export default function Sayfa() {
       />
 
       <div className="satir">
+        <label className="secim">
+          Örnek:
+          <select
+            value={ornekId}
+            onChange={(e) => ornekSec(e.target.value)}
+            disabled={calisiyor}
+          >
+            {ORNEKLER.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.ad}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <label className="secim">
           Model:
           <select

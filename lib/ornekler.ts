@@ -1,0 +1,121 @@
+// lib/ornekler.ts
+// -----------------------------------------------------------------------------
+// UI'da seçilebilen örnek sözleşme metinleri. Tek kaynak burada; page.tsx yalnız
+// bu listeyi tüketir. Yeni örnek eklemek için diziye bir öğe ekleyin.
+//
+//   - "kisa"     : elle yazılmış, 5 maddelik küçük örnek (hızlı test için).
+//   - "detayli"  : test/hizmet_sozlesmesi.pdf içeriğinden çıkarılan, 10 maddelik
+//                  ayrıntılı sözleşme (pdf-parse ile metne çevrildi).
+// -----------------------------------------------------------------------------
+
+export type OrnekSozlesme = {
+  id: string;
+  ad: string;
+  metin: string;
+};
+
+const KISA_HIZMET = `HİZMET SÖZLEŞMESİ
+
+1. Ödeme: Hizmet bedeli, faturanın düzenlenmesinden itibaren 15 iş günü içinde ödenir. Geç ödemede aylık %10 gecikme faizi uygulanır.
+
+2. Fesih: Taraflardan biri, herhangi bir gerekçe göstermeksizin ve tazminat ödemeksizin sözleşmeyi tek taraflı olarak dilediği zaman feshedebilir.
+
+3. Gizlilik: Yüklenici, edindiği tüm ticari sırları süresiz olarak gizli tutmakla yükümlüdür; bu yükümlülüğün ihlali halinde 500.000 TL cezai şart ödenir.
+
+4. Sorumluluk: Yüklenici, her türlü doğrudan ve dolaylı zarardan sınırsız olarak sorumludur.
+
+5. Teslim: İşin teslimi, imza tarihinden itibaren 30 takvim günü içinde yapılır.`;
+
+const DETAYLI_HIZMET = `HİZMET SÖZLEŞMESİ
+Süresi Uzatılmış ve Detaylandırılmış Genel Hizmet Alım Sözleşmesi
+
+1. TARAFLAR VE İLETİŞİM BİLGİLERİ
+
+İŞVEREN / MÜŞTERİ
+Unvanı: [İşveren Şirket Unvanı]
+Adresi: [İşveren Adresi]
+Vergi Dairesi / No: [VD / VN]
+E-posta: [İşveren E-posta]
+Telefon: [İşveren Telefon]
+
+YÜKLENİCİ / HİZMET SAĞLAYICI
+Unvanı: [Yüklenici Şirket Unvanı]
+Adresi: [Yüklenici Adresi]
+Vergi Dairesi / No: [VD / VN]
+E-posta: [Yüklenici E-posta]
+Telefon: [Yüklenici Telefon]
+
+İşbu Sözleşme kapsamı dahilinde İşveren ve Yüklenici ayrı ayrı "Taraf", birlikte "Taraflar" olarak anılacaktır. Taraflar yukarıda belirtilen adreslerin kanuni tebligat adresleri olduğunu, adres değişikliklerinin diğer tarafa 7 (yedi) gün içinde yazılı olarak bildirilmediği sürece bu adreslere yapılacak tebligatların geçerli sayılacağını kabul ederler.
+
+2. SÖZLEŞMENİN KONUSU VE KAPSAMI
+
+İşbu Sözleşme'nin konusu, İşveren tarafından talep edilen ve Yüklenici tarafından üstlenilen hizmetlerin (bundan böyle "Hizmet" olarak anılacaktır) yürütülmesine, teslimine, tarafların karşılıklı hak ve yükümlülüklerine, ödeme koşullarına, gizlilik esaslarına ve uyuşmazlıkların çözümüne ilişkin şartların belirlenmesidir.
+
+Yüklenici, işbu Sözleşme ve eklerinde yer alan teknik şartlara, mesleki standartlara ve İşveren'in makul talimatlarına uygun olarak Hizmet'i eksiksiz, ayıpsız ve zamanında yerine getirmeyi kabul, beyan ve taahhüt eder.
+
+3. SÖZLEŞME SÜRESİ VE OTOMATİK UZAMA
+
+3.1. Başlangıç ve Süre: İşbu Sözleşme, taraflarca imzalandığı tarihte yürürlüğe girer ve imza tarihinden itibaren 1 (bir) yıl süreyle geçerlidir.
+
+3.2. Otomatik Uzama (Yenileme): Taraflardan herhangi biri, yürürlükteki Sözleşme süresinin bitiminden en geç 15 (on beş) gün önce diğer tarafa noter veya iadeli taahhütlü mektup vasıtasıyla yazılı olarak fesih bildiriminde bulunmadığı takdirde, işbu Sözleşme aynı şartlarla ve kapsama eklenen yeni fiyat güncellemeleriyle kendiliğinden 1 (bir) yıl süreyle uzar. İzleyen müteakip dönemlerde de aynı uzama usulü ve esası geçerli olacaktır.
+
+4. İŞİN TESLİMİ VE KABUL KOŞULLARI
+
+4.1. Teslim Süresi: Yüklenici, Sözleşme konusu iş ve hizmetleri imza tarihinden itibaren 30 (otuz) takvim günü içinde eksiksiz ve kullanıma/faydalanmaya hazır şekilde İşveren'e teslim etmekle yükümlüdür.
+
+4.2. Teslim ve Muayene Prosedürü: Hizmetin teslimi sonrası İşveren, 5 (beş) iş günü içinde işin teknik şartlara ve amaca uygunluğunu denetler. Varsa tespit edilen eksiklik veya ayıplar Yüklenici'ye bildirilir. Yüklenici, bildirilen aksaklıkları en geç 7 (yedi) iş günü içinde gidermekle yükümlüdür.
+
+5. HİZMET BEDELİ VE ÖDEME KOŞULLARI
+
+5.1. Ödeme Vadesi: Hizmet bedeli, Yüklenici tarafından usulüne uygun düzenlenecek faturanın İşveren'e tebliğ edildiği tarihten itibaren 15 (on beş) iş günü içinde Yüklenici'nin bildireceği banka hesabına ödenecektir.
+
+5.2. Gecikme Faizi: İşveren'in ödemeyi süresi içinde yapmaması halinde, gecikilen her ay için aylık %10 (yüzde on) oranında gecikme faizi uygulanır. Aydan kısa süreler için günlük orantılı faiz hesabı yürütülür.
+
+5.3. Fiyat Güncellemesi (Uzatma Dönemleri İçin): Sözleşme'nin 3.2. maddesi uyarınca uzadığı her yeni 1 (bir) yıllık dönemde uygulanacak hizmet bedeli, Türkiye İstatistik Kurumu (TÜİK) tarafından açıklanan bir önceki yılın Tüketici Fiyat Endeksi (TÜFE) on iki aylık ortalamalara göre değişim oranından az olmamak üzere yeniden belirlenecektir.
+
+6. GİZLİLİK VE BİLGİ GÜVENLİĞİ
+
+6.1. Gizli Bilgi Tanımı: Taraflar, sözleşme ilişkisi süresince birbirleri hakkında edindikleri her türlü ticari, mali, teknik, hukuki ve operasyonel bilgi, veri, müşteri listeleri, yazılım ve ticari sırları "Gizli Bilgi" olarak kabul ederler.
+
+6.2. Gizlilik Yükümlülüğü: Yüklenici, edindiği tüm Gizli Bilgileri Sözleşme süresince ve Sözleşme sona erse dahi süresiz olarak gizli tutmakla, üçüncü kişilere açıklamamakla ve Sözleşme amacı dışında kullanmamakla yükümlüdür.
+
+6.3. Cezai Şart: Yüklenici'nin gizlilik ihlalinde bulunması halinde, İşveren'in doğmuş veya doğacak sair tazminat hakları saklı kalmak kaydıyla, Yüklenici ilk yazılı ihtarla birlikte nakden ve defaten 500.000 TL (Beş Yüz Bin Türk Lirası) tutarındaki cezai şartı ödemeyi kabul ve taahhüt eder.
+
+7. SORUMLULUK VE TAZMİNAT
+
+Yüklenici, işbu Sözleşme kapsamındaki yükümlülüklerinin ifası sırasında kendi kusuru, ihmali veya ağır kusuru nedeniyle İşveren'e, çalışanlarına veya üçüncü kişilere vereceği her türlü doğrudan, dolaylı, maddi, manevi ve müspet/menfi zararlardan sınırsız olarak sorumludur. İşveren, bu zararları Yüklenici'nin hakedişlerinden mahsup etme veya doğrudan tahsil etme hakkına sahiptir.
+
+8. SÖZLEŞMENİN FESHİ
+
+8.1. Serbestçe Tek Taraflı Fesih: Taraflardan her biri, herhangi bir gerekçe göstermeksizin ve diğer tarafa herhangi bir tazminat, cezai şart veya hak ödeme yükümlülüğü altına girmeksizin, işbu Sözleşme'yi dilediği zaman tek taraflı olarak feshetme hakkına sahiptir.
+
+8.2. Haklı Nedene Dayanarak Fesih: Taraflardan birinin Sözleşme hükümlerini ağır şekilde ihlal etmesi ve verilen 7 (yedi) günlük süreye rağmen ihlali gidermemesi halinde, diğer Taraf Sözleşme'yi derhal ve tazminatsız olarak feshedebilir.
+
+9. MÜCBİR SEBEPLER
+
+Tarafların kontrolü dışında gelişen, önceden öngörülemeyen ve Sözleşme konusu yükümlülüklerin ifasını imkansız kılan doğal afetler, savaş, seferberlik, salgın hastalıklar, genel grev ve yasal kısıtlamalar mücbir sebep olarak kabul edilir. Mücbir sebep durumunda etkilenen Taraf, durumu 5 (beş) gün içinde diğer tarafa yazılı olarak bildirir. Mücbir sebebin 30 (otuz) günden fazla sürmesi halinde Taraflar Sözleşme'yi tazminatsız feshedebilir.
+
+10. MÜŞTEREK HÜKÜMLER VE UYUŞMAZLIKLARIN ÇÖZÜMÜ
+
+10.1. Bölünebilirlik: İşbu Sözleşme'nin herhangi bir maddesinin veya hükmünün geçersiz, kanuna aykırı veya uygulanamaz hale gelmesi, Sözleşme'nin diğer maddelerinin geçerliliğini etkilemez.
+
+10.2. Devir Yasağı: Yüklenici, İşveren'in yazılı onayı olmaksızın işbu Sözleşme'den doğan hak, alacak ve yükümlülüklerini üçüncü kişilere devredemez veya temlik edemez.
+
+10.3. Uygulanacak Hukuk ve Yetki: İşbu Sözleşme Türk Hukukuna tabidir. Sözleşme'nin uygulanmasından veya yorumlanmasından doğabilecek her türlü uyuşmazlığın çözümünde [Şehir] Mahkemeleri ve İcra Daireleri münhasıran yetkilidir.
+
+İşbu Sözleşme, 10 (on) ana maddeden ibaret olup, Taraflarca okunarak, her bir maddesi üzerinde tam bir mutabakata varılmak suretiyle 2 (iki) nüsha olarak [Tarih] tarihinde imzalanmıştır.
+
+İŞVEREN / MÜŞTERİ
+[İşveren Şirket Unvanı]
+Temsilci: _______________
+İmza / Kaşe:
+
+YÜKLENİCİ / HİZMET SAĞLAYICI
+[Yüklenici Şirket Unvanı]
+Temsilci: _______________
+İmza / Kaşe:`;
+
+export const ORNEKLER: OrnekSozlesme[] = [
+  { id: "kisa", ad: "Kısa Hizmet Sözleşmesi (5 madde)", metin: KISA_HIZMET },
+  { id: "detayli", ad: "Detaylı Hizmet Sözleşmesi (10 madde, PDF)", metin: DETAYLI_HIZMET },
+];

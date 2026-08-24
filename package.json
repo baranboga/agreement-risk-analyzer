@@ -4,7 +4,7 @@
   "private": true,
   "description": "OpenAI destekli Sözleşme Risk Tarayıcısı (öğrenme amaçlı, ham fetch + SSE)",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
