@@ -68,6 +68,39 @@ export async function openAICagir(p: LLMParametreleri): Promise<Response> {
   });
 }
 
+/**
+ * NON-STREAMING çağrı — TÜM cevabı tek parça olarak alır (DENEY MODU için).
+ * Deneyde ölçtüğümüz şey süre değil KARAR olduğundan akışa gerek yoktur.
+ * Normal akış hâlâ openAICagir (streaming) kullanır; bu fonksiyon ona DOKUNMAZ.
+ *
+ * stream:false olduğunda tool_calls ve usage doğrudan gövdede gelir:
+ *   choices[0].message.tool_calls[] , choices[0].finish_reason , usage
+ */
+export async function openAICagirTekParca(p: LLMParametreleri): Promise<Response> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY tanımlı değil (.env dosyasına ekleyin).");
+  }
+
+  const body: Record<string, unknown> = {
+    model: p.model,
+    messages: p.messages,
+    stream: false,
+  };
+  if (p.tools) body.tools = p.tools;
+  if (p.responseFormat) body.response_format = p.responseFormat;
+
+  return fetch(OPENAI_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+    signal: p.signal,
+  });
+}
+
 // --- Akış (SSE) ayrıştırma ---------------------------------------------------
 
 // openAIParcalariniOku'nun ürettiği "anlamlı parça" tipleri. Route bunları

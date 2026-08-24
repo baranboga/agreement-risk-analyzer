@@ -302,3 +302,146 @@ button.baglanti {
   justify-content: space-between;
   align-items: baseline;
 }
+
+/* -------------------------------------------------------------------------- */
+/* DENEY MODU (app/deney)                                                      */
+/* -------------------------------------------------------------------------- */
+
+.deney-kapsayici {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+/* Sayı girişi (N kez) */
+input.deney-sayi {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  width: 72px;
+}
+
+/* Kısıt metni referans şeridi */
+.deney-kisit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+.deney-kisit .etiket {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.deney-kisit .deger {
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Üç koşul yan yana */
+.deney-panolar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .deney-panolar {
+    grid-template-columns: 1fr;
+  }
+}
+
+.deney-pano {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  min-width: 0; /* grid içinde tablo taşmasın */
+}
+.deney-pano.aktif {
+  border-color: var(--accent);
+}
+
+.deney-pano h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.deney-pano .pano-alt {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.deney-tablo-sar {
+  overflow-x: auto;
+}
+
+table.deney-tablo {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+table.deney-tablo th,
+table.deney-tablo td {
+  text-align: right;
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+table.deney-tablo th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+table.deney-tablo th:first-child,
+table.deney-tablo td:first-child {
+  text-align: left;
+}
+table.deney-tablo td.evet {
+  color: var(--dusuk);
+  font-weight: 600;
+}
+table.deney-tablo td.hayir {
+  color: var(--muted);
+}
+
+.deney-ozet {
+  margin-top: 12px;
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.deney-ozet .satir-ozet {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+.deney-ozet .etiket {
+  color: var(--muted);
+}
+.deney-ozet .deger {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.deney-bos {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  padding: 16px 0;
+}

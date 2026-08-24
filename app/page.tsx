@@ -302,7 +302,10 @@ export default function Sayfa() {
       <h1>Sözleşme Risk Tarayıcısı</h1>
       <p className="altbaslik">
         Metni yapıştır, tara; riskli maddeler risk seviyesine göre akar. (OpenAI,
-        ham fetch + SSE — öğrenme amaçlı.)
+        ham fetch + SSE — öğrenme amaçlı.){" "}
+        <a className="baglanti" href="/deney">
+          → Deney Modu (koşul karşılaştırma)
+        </a>
       </p>
 
       {/* Canlı token & maliyet göstergesi */}
