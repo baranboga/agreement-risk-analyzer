@@ -23,6 +23,7 @@ import {
   type OpenAIToolCall,
 } from "@/lib/llm";
 import { analizJsonSchema } from "@/lib/schema";
+import { sistemPromptu } from "@/lib/prompt";
 import { toolTanimlari, toolCalistir } from "@/lib/tools";
 import { maliyetHesapla, FIYATLAR, type ModelAdi } from "@/lib/cost";
 import type { SunucuOlayi } from "@/lib/protocol";
@@ -54,23 +55,9 @@ export async function POST(req: Request) {
   // Modelin süre hesabında referans alması için bugünün tarihi.
   const bugun = new Date().toISOString().slice(0, 10);
 
-  const SISTEM_PROMPTU = [
-    "Sen deneyimli bir Türk sözleşme hukuku analistisin.",
-    "Sana verilen sözleşme metnini incele ve RİSK içeren maddeleri tespit et.",
-    "",
-    "Her bulgu için şunları üret:",
-    "- alinti: sözleşmeden birebir KISA alıntı",
-    '- riskSeviyesi: "dusuk" | "orta" | "yuksek"',
-    "- gerekce: maddenin neden riskli olduğu",
-    "- oneri: riski azaltmak için somut öneri",
-    "- sureIfadesi: madde bir süreye/tarihe bağlıysa ilgili not; değilse null",
-    "",
-    "Bir süre/son tarih hesaplaman gerekiyorsa 'sureHesapla' TOOL'unu kullan.",
-    `Somut bir başlangıç tarihi verilmemişse bugünü (${bugun}) başlangıç kabul et.`,
-    "",
-    "Sadece gerçekten riskli maddeleri raporla. Çıktıyı verilen JSON şemasına",
-    "UYGUN üret; şema dışı alan ekleme.",
-  ].join("\n");
+  // Sistem promptu TEK KAYNAKTAN gelir (lib/prompt.ts); deney A/B ile birebir
+  // aynıdır. Kısıt yalnızca deney "C" koşulunda eklenir, normal akışta yok.
+  const SISTEM_PROMPTU = sistemPromptu(bugun);
 
   const encoder = new TextEncoder();
 

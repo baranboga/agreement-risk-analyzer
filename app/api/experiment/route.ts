@@ -56,18 +56,24 @@ export async function POST(req: Request) {
   const model: ModelAdi =
     istenenModel in FIYATLAR ? (istenenModel as ModelAdi) : VARSAYILAN_MODEL;
   const kosul: DeneyKosulu = gecerliKosul(govde?.kosul) ? govde.kosul : "A";
+  // Deney UI'dan gelen DÜZENLENEBİLİR base system prompt. Boş/verilmezse
+  // varsayılan (lib/prompt.ts) kullanılır. Base üç koşulda da ortaktır.
+  const ozelPrompt: string | undefined =
+    typeof govde?.prompt === "string" && govde.prompt.trim()
+      ? govde.prompt
+      : undefined;
 
   if (!metin.trim()) {
     return Response.json({ hata: "Sözleşme metni boş." }, { status: 400 });
   }
 
-  // "bugünü varsay" dürtüsü için referans tarih (üç koşulda da ortak).
+  // "bugünü varsay" dürtüsü için referans tarih (yalnızca varsayılan base'de).
   const bugun = new Date().toISOString().slice(0, 10);
 
   // Koşula göre tool tarifi ve system prompt — TEK değişken bu.
   const tools = deneyToollariniKur(kosul);
   const messages: ChatMesaji[] = [
-    { role: "system", content: deneySistemPromptu(kosul, bugun) },
+    { role: "system", content: deneySistemPromptu(kosul, bugun, ozelPrompt) },
     { role: "user", content: metin },
   ];
 

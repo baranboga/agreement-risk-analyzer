@@ -12,16 +12,20 @@
 //
 // Metin, model, base system prompt ve tool şeması HER KOŞULDA AYNIDIR.
 //
-// NOT (deneyin çalışması için ŞART): Base system prompt, "başlangıç tarihi
-// verilmemişse bugünü varsay" satırını ÜÇ KOŞULDA DA içerir. Bu satır tool'u
-// çağırmaya iten dürtüdür; onsuz — örnek sözleşmelerde somut tarih olmadığı
-// için — zorunlu baslangicTarihi doldurulamaz ve model A'da bile hiç çağırmaz
-// (0/N floor effect => ölçülecek bir şey kalmaz). Dürtü ortak olduğundan tek
-// bağımsız değişken yine "kısıtın yeri"dir: B/C'deki kısıtın, bu ortak dürtüyü
-// bastırıp bastırmadığını ölçeriz.
+// Base system prompt TEK KAYNAKTAN gelir (lib/prompt.ts) — normal tarama ile
+// deney A/B BİREBİR aynı prompt'u kullanır; deney C ise base'e kısıtı ekler.
+//
+// NOT (deneyin çalışması için ŞART): Base prompt, "başlangıç tarihi verilmemişse
+// bugünü varsay" satırını içerir (üç koşulda da). Bu satır tool'u çağırmaya iten
+// dürtüdür; onsuz — örnek sözleşmelerde somut tarih olmadığı için — zorunlu
+// baslangicTarihi doldurulamaz ve model A'da bile hiç çağırmaz (0/N floor effect
+// => ölçülecek bir şey kalmaz). Dürtü ortak olduğundan tek bağımsız değişken
+// yine "kısıtın yeri"dir: B/C'deki kısıtın bu dürtüyü bastırıp bastırmadığını
+// ölçeriz.
 // -----------------------------------------------------------------------------
 
 import { toolTanimlari } from "./tools";
+import { sistemPromptu } from "./prompt";
 
 // Üç deney koşulu.
 export type DeneyKosulu = "A" | "B" | "C";
@@ -55,40 +59,24 @@ export function deneyToollariniKur(kosul: DeneyKosulu) {
 }
 
 /**
- * Koşula göre system prompt'u üretir. Base prompt üç koşulda da AYNIDIR
- * ("bugünü varsay" dürtüsü dahil); kısıt yalnızca C'de, tool kullanım
- * talimatının hemen ardına eklenir.
+ * Koşula göre system prompt'u üretir.
  *
- * @param bugun Referans "bugün" tarihi (YYYY-MM-DD). İstek anında hesaplanıp
- *              geçilir; fonksiyon saf kalsın diye içeride üretilmez.
+ * Base: kullanıcı deney UI'da düzenlediyse o metin (basePrompt); yoksa TEK
+ * KAYNAKTAN (sistemPromptu) gelen varsayılan. Base üç koşulda da AYNIDIR (UI
+ * onu kilitler). Kısıt yalnızca C'de, base'in SONUNA eklenir — düzenlenebilir
+ * base ile de tutarlı olsun diye (varsayılanda da, özel metinde de aynı yer).
+ *
+ * @param bugun      Referans "bugün" (YYYY-MM-DD); yalnızca varsayılan base için.
+ * @param basePrompt UI'dan gelen özel base; boş/verilmezse varsayılan kullanılır.
  */
-export function deneySistemPromptu(kosul: DeneyKosulu, bugun: string): string {
-  const satirlar: string[] = [
-    "Sen deneyimli bir Türk sözleşme hukuku analistisin.",
-    "Sana verilen sözleşme metnini incele ve RİSK içeren maddeleri tespit et.",
-    "",
-    "Her bulgu için şunları üret:",
-    "- alinti: sözleşmeden birebir KISA alıntı",
-    '- riskSeviyesi: "dusuk" | "orta" | "yuksek"',
-    "- gerekce: maddenin neden riskli olduğu",
-    "- oneri: riski azaltmak için somut öneri",
-    "- sureIfadesi: madde bir süreye/tarihe bağlıysa ilgili not; değilse null",
-    "",
-    "Bir süre/son tarih hesaplaman gerekiyorsa 'sureHesapla' TOOL'unu kullan.",
-    // ÜÇ KOŞULDA DA ORTAK dürtü: A'nın tabanı sıfır kalmasın (bkz. dosya başı NOT).
-    `Somut bir başlangıç tarihi verilmemişse bugünü (${bugun}) başlangıç kabul et.`,
-  ];
-
-  // Koşul C: kısıt system prompt'a da eklenir.
-  if (kosul === "C") satirlar.push(KISIT_METNI);
-
-  satirlar.push(
-    "",
-    "Sadece gerçekten riskli maddeleri raporla. Çıktıyı verilen JSON şemasına",
-    "UYGUN üret; şema dışı alan ekleme."
-  );
-
-  return satirlar.join("\n");
+export function deneySistemPromptu(
+  kosul: DeneyKosulu,
+  bugun: string,
+  basePrompt?: string
+): string {
+  const base =
+    basePrompt && basePrompt.trim() ? basePrompt : sistemPromptu(bugun);
+  return kosul === "C" ? `${base}\n${KISIT_METNI}` : base;
 }
 
 // Bir deney taramasının (tek koşulda tek çalıştırma) ölçüm sonucu.

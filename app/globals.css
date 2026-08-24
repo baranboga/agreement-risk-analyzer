@@ -324,6 +324,25 @@ input.deney-sayi {
   width: 72px;
 }
 
+/* Alan başlığı (etiket + yardımcı buton, ör. "Varsayılana döndür") */
+.deney-alan-baslik {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin: 12px 0 4px;
+}
+.deney-alan-baslik label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Düzenlenebilir sistem promptu — metin alanından biraz kısa */
+textarea.deney-prompt {
+  min-height: 150px;
+  font-size: 12px;
+}
+
 /* Kısıt metni referans şeridi */
 .deney-kisit {
   display: flex;

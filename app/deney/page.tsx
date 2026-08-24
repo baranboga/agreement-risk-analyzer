@@ -16,10 +16,16 @@
 // Normal tarama akışı (app/page.tsx) buradan tamamen bağımsızdır.
 // -----------------------------------------------------------------------------
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ORNEKLER } from "@/lib/ornekler";
 import { FIYATLAR, type ModelAdi } from "@/lib/cost";
+import { sistemPromptu } from "@/lib/prompt";
 import { KISIT_METNI, type DeneyKosulu, type DeneySonucu } from "@/lib/deney";
+
+// Client tarafı "bugün" (YYYY-MM-DD). Yalnızca effect/handler içinde çağrılır.
+function bugunBul(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 // Üç koşulun ekranda gösterilecek etiketleri.
 const KOSULLAR: { deger: DeneyKosulu; ad: string; aciklama: string }[] = [
@@ -47,6 +53,9 @@ export default function DeneySayfasi() {
   const [ornekId, setOrnekId] = useState(ORNEKLER[0].id);
   const [metin, setMetin] = useState(ORNEKLER[0].metin);
   const [model, setModel] = useState<ModelAdi>("gpt-4.1");
+  // Düzenlenebilir base system prompt. Başlangıç boş; hydration uyuşmazlığı
+  // olmasın diye mount sonrası (aşağıdaki effect) varsayılanla doldurulur.
+  const [prompt, setPrompt] = useState("");
 
   // Koşul ve tekrar sayısı (çalışırken hariç serbest).
   const [kosul, setKosul] = useState<DeneyKosulu>("A");
@@ -60,14 +69,24 @@ export default function DeneySayfasi() {
   const sonucVar =
     sonuclar.A.length + sonuclar.B.length + sonuclar.C.length > 0;
   const bosMu = !metin.trim();
-  // Sonuç varken metin/model kilitli: koşullar arası tek değişken "koşul" olsun.
+  // Sonuç varken metin/prompt/model kilitli: koşullar arası tek değişken
+  // "koşul" olsun (base prompt üç koşulda da aynı kalmalı).
   const kilit = sonucVar || calisiyor;
+
+  // Varsayılan sistem promptunu ilk mount'ta (client) doldur.
+  useEffect(() => {
+    setPrompt(sistemPromptu(bugunBul()));
+  }, []);
 
   function ornekSec(id: string) {
     const o = ORNEKLER.find((x) => x.id === id);
     if (!o) return;
     setOrnekId(id);
     setMetin(o.metin);
+  }
+
+  function promptuSifirla() {
+    setPrompt(sistemPromptu(bugunBul()));
   }
 
   async function calistir() {
@@ -83,7 +102,7 @@ export default function DeneySayfasi() {
         const res = await fetch("/api/experiment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ metin, model, kosul }),
+          body: JSON.stringify({ metin, model, kosul, prompt }),
         });
         const veri = await res.json().catch(() => null);
         if (!res.ok || !veri || veri.hata) {
@@ -124,10 +143,34 @@ export default function DeneySayfasi() {
       </div>
 
       {/* Giriş metni (sonuç varken kilitli) */}
+      <div className="deney-alan-baslik">
+        <label>Sözleşme metni</label>
+      </div>
       <textarea
         value={metin}
         onChange={(e) => setMetin(e.target.value)}
         placeholder="Sözleşme metnini buraya yapıştırın..."
+        disabled={kilit}
+      />
+
+      {/* Düzenlenebilir base system prompt (üç koşulda ortak; C'de kısıt sona
+          eklenir). Sonuç varken kilitli. */}
+      <div className="deney-alan-baslik">
+        <label>Sistem promptu (base — üç koşulda ortak; C&apos;de kısıt sona eklenir)</label>
+        <button
+          type="button"
+          className="baglanti"
+          onClick={promptuSifirla}
+          disabled={kilit}
+        >
+          Varsayılana döndür
+        </button>
+      </div>
+      <textarea
+        className="deney-prompt"
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder="Sistem promptu…"
         disabled={kilit}
       />
 
@@ -204,8 +247,8 @@ export default function DeneySayfasi() {
 
       {kilit && !calisiyor && (
         <p className="altbaslik">
-          Metin ve model kilitli (koşullar arası sabit kalsın diye). Değiştirmek
-          için önce “Sonuçları temizle”.
+          Metin, sistem promptu ve model kilitli (koşullar arası sabit kalsın
+          diye). Değiştirmek için önce “Sonuçları temizle”.
         </p>
       )}
 
