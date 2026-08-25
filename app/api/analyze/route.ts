@@ -23,9 +23,12 @@ import {
   type OpenAIToolCall,
 } from "@/lib/llm";
 import { analizJsonSchema } from "@/lib/schema";
-import { sistemPromptu } from "@/lib/prompt";
+import { sistemPromptu, sozlesmeMetniniSar } from "@/lib/prompt";
 import { toolTanimlari, toolCalistir } from "@/lib/tools";
-import { maliyetHesapla, FIYATLAR, type ModelAdi } from "@/lib/cost";
+import { maliyetHesapla, type ModelAdi } from "@/lib/cost";
+import { istekDogrula } from "@/lib/validation";
+import { maddeleriDogrula } from "@/lib/dogrula";
+import { moderasyonKontrol } from "@/lib/moderation";
 import type { SunucuOlayi } from "@/lib/protocol";
 
 // fetch'e AbortSignal geçebilmek ve process.env okumak için Node runtime.
@@ -46,18 +49,33 @@ function guvenliParse(s: string): unknown {
 
 export async function POST(req: Request) {
   const govde = await req.json().catch(() => null);
-  const metin: string = typeof govde?.metin === "string" ? govde.metin : "";
-  // Model client'tan gelir ama SADECE bilinen modellere izin ver (güvenlik +
-  // fiyat tablosunda karşılığı olsun).
-  const istenenModel: string = typeof govde?.model === "string" ? govde.model : "";
-  const model: ModelAdi = istenenModel in FIYATLAR ? (istenenModel as ModelAdi) : VARSAYILAN_MODEL;
+
+  // ==================== GİRİŞ DOĞRULAMASI (lib/validation.ts) ================
+  // Route ince kalsın: tüm alan kontrolü tek çağrıda. Reddedilirse 400 döner ve
+  // gövde, mevcut SunucuOlayi HATA formatına uygun bir nesnedir (kind: gecersiz_girdi).
+  const dv = istekDogrula(govde);
+  if (!dv.basarili) {
+    const olay: SunucuOlayi = {
+      tip: "hata",
+      kind: "gecersiz_girdi",
+      mesaj: dv.mesaj,
+    };
+    return Response.json(olay, { status: 400 });
+  }
+  const { metin, savunma, moderasyon } = dv.veri;
+  // model doğrulanmış: ya bilinen bir FIYATLAR anahtarı ya da undefined.
+  const model: ModelAdi = dv.veri.model ?? VARSAYILAN_MODEL;
 
   // Modelin süre hesabında referans alması için bugünün tarihi.
   const bugun = new Date().toISOString().slice(0, 10);
 
-  // Sistem promptu TEK KAYNAKTAN gelir (lib/prompt.ts); deney A/B ile birebir
-  // aynıdır. Kısıt yalnızca deney "C" koşulunda eklenir, normal akışta yok.
-  const SISTEM_PROMPTU = sistemPromptu(bugun);
+  // Sistem promptu TEK KAYNAKTAN gelir (lib/prompt.ts). savunma=false iken deney
+  // A/B ile BİREBİR aynıdır; savunma=true iken sonuna SINIRLANDIRMA bölümü eklenir.
+  const SISTEM_PROMPTU = sistemPromptu(bugun, savunma);
+
+  // SAVUNMA (katman 2): açıksa kullanıcı metnini <SOZLESME_METNI> etiketleri
+  // arasına sar. Kapalıysa metin aynen gider (baseline davranışı korunur).
+  const kullaniciIcerigi = savunma ? sozlesmeMetniniSar(metin) : metin;
 
   const encoder = new TextEncoder();
 
@@ -75,7 +93,8 @@ export async function POST(req: Request) {
         }
       };
 
-      // Boş metin erken kontrolü.
+      // Boş metin erken kontrolü. (Doğrulama min 1 karakter garanti eder ama
+      // sadece boşluklardan oluşan metni yine de burada eleriz.)
       if (!metin.trim()) {
         yaz({ tip: "hata", kind: "bilinmeyen", mesaj: "Sözleşme metni boş." });
         yaz({ tip: "bitti" });
@@ -88,13 +107,28 @@ export async function POST(req: Request) {
       let toplamCompletion = 0;
       let toolTuru = 0; // toplam kaç tool çalıştı
 
-      // Sohbet geçmişi (tool döngüsünde büyür).
+      // Sohbet geçmişi (tool döngüsünde büyür). Kullanıcı içeriği savunma açıksa
+      // <SOZLESME_METNI> ile sarılmıştır.
       const messages: ChatMesaji[] = [
         { role: "system", content: SISTEM_PROMPTU },
-        { role: "user", content: metin },
+        { role: "user", content: kullaniciIcerigi },
       ];
 
       try {
+        // ==================== MODERATION (katman 6, opsiyonel) =================
+        // İstenirse önce metni moderation'dan geçir. ENGELLEMEYİZ; sadece işaretler
+        // ve eklediği gecikmeyi ölçüp client'a bildiririz. Hata olsa da analiz devam eder.
+        if (moderasyon) {
+          const mod = await moderasyonKontrol(metin, req.signal);
+          yaz({
+            tip: "moderation",
+            flagged: mod.flagged,
+            kategoriler: mod.kategoriler,
+            gecikmeMs: mod.gecikmeMs,
+            ...(mod.hata ? { hata: mod.hata } : {}),
+          });
+        }
+
         // ==================== ELLE TOOL DÖNGÜSÜ (max 3 tur) ====================
         // Döngüyü bilerek açıkça bir while ile yazıyoruz (gizli soyutlama yok):
         //   1) OpenAI'ı çağır, akışı oku
@@ -233,8 +267,15 @@ export async function POST(req: Request) {
 
           // Sunucu tarafı bir güvenlik ağı: içerik geçerli JSON mı?
           // (Şema uygunluğunu client mod A'da zod ile ayrıca doğruluyoruz.)
+          // Aynı parse'ı ÇIKIŞ DOĞRULAMASI için de kullanıyoruz.
           try {
-            JSON.parse(icerik);
+            const obj = JSON.parse(icerik);
+            // ÇIKIŞ DOĞRULAMASI (katman 3): her maddenin alıntısı ORİJİNAL metinde
+            // (sarmalsız `metin`) gerçekten var mı? Deterministik; LLM yok.
+            // Doğrulanamayan madde SİLİNMEZ — client'a bayrak olarak gider, orada
+            // kırmızı uyarı rozetiyle gösterilir. Mod A ve Mod B'de de çalışır.
+            const maddeler = Array.isArray(obj?.maddeler) ? obj.maddeler : [];
+            yaz({ tip: "dogrulama", sonuclar: maddeleriDogrula(maddeler, metin) });
           } catch {
             yaz({
               tip: "hata",

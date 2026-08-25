@@ -27,14 +27,34 @@ export type SunucuOlayi =
       toolTuru: number;
       usd: number;
     }
-  // Hata. kind alanı üç ana durumu ayırır (istenildiği gibi ayrı mesajlar):
-  //   rate_limit    -> 429, hız sınırı
-  //   gecersiz_json -> model geçerli JSON üretemedi
-  //   tool_hatasi   -> tool çalışırken hata
-  //   bilinmeyen    -> diğer her şey
+  // ÇIKIŞ DOĞRULAMASI sonucu (bkz. lib/dogrula.ts). sonuclar[i], i. maddenin
+  // alıntısının kaynak metinde bulunup bulunmadığıdır (maddeler ile AYNI sıra).
+  // false olan maddede UI kırmızı "alıntı doğrulanamadı" rozeti gösterir.
+  // Akışın sonunda, nihai JSON hazır olunca TEK sefer gönderilir.
+  | { tip: "dogrulama"; sonuclar: boolean[] }
+  // MODERATION sonucu (opsiyonel; yalnızca istekte moderasyon=true ise gelir).
+  // Girdi ENGELLENMEZ, sadece işaretlenir. gecikmeMs bu çağrının eklediği süredir.
+  | {
+      tip: "moderation";
+      flagged: boolean | null; // null -> çağrı yapılamadı/başarısız
+      kategoriler: string[];
+      gecikmeMs: number;
+      hata?: string;
+    }
+  // Hata. kind alanı ana durumları ayırır (istenildiği gibi ayrı mesajlar):
+  //   rate_limit     -> 429, hız sınırı
+  //   gecersiz_json  -> model geçerli JSON üretemedi
+  //   tool_hatasi    -> tool çalışırken hata
+  //   gecersiz_girdi -> istek gövdesi giriş doğrulamasından geçemedi (400)
+  //   bilinmeyen     -> diğer her şey
   | {
       tip: "hata";
-      kind: "rate_limit" | "gecersiz_json" | "tool_hatasi" | "bilinmeyen";
+      kind:
+        | "rate_limit"
+        | "gecersiz_json"
+        | "tool_hatasi"
+        | "gecersiz_girdi"
+        | "bilinmeyen";
       mesaj: string;
     }
   // Akış bitti; client döngüsünü kapatabilir.

@@ -62,6 +62,7 @@ const HATA_BASLIK: Record<string, string> = {
   rate_limit: "Hız Sınırı",
   gecersiz_json: "Geçersiz JSON",
   tool_hatasi: "Tool Hatası",
+  gecersiz_girdi: "Geçersiz Girdi",
   bilinmeyen: "Hata",
 };
 
@@ -70,12 +71,25 @@ export default function Sayfa() {
   const [metin, setMetin] = useState(ORNEKLER[0].metin);
   const [model, setModel] = useState<ModelAdi>("gpt-4.1");
   const [mod, setMod] = useState<"A" | "B">("B");
+  // SAVUNMA: prompt injection savunması. Varsayılan AÇIK -> uygulama korunmalı.
+  // (Deney modu bundan bağımsızdır; kendi route'unu kullanır.)
+  const [savunma, setSavunma] = useState(true);
+  // MODERATION ölçümü (opsiyonel). Varsayılan kapalı.
+  const [moderasyon, setModerasyon] = useState(false);
 
   const [calisiyor, setCalisiyor] = useState(false);
   const [maddeler, setMaddeler] = useState<MaddeGorunum[]>([]);
   const [toollar, setToollar] = useState<ToolOgesi[]>([]);
   const [hatalar, setHatalar] = useState<HataOgesi[]>([]);
   const [kullanim, setKullanim] = useState<Kullanim | null>(null);
+  // ÇIKIŞ DOĞRULAMASI: her madde için alıntı kaynakta doğrulandı mı (index eşli).
+  const [dogrulamalar, setDogrulamalar] = useState<boolean[]>([]);
+  // MODERATION sonucu (varsa üstte küçük bir bant olarak gösterilir).
+  const [moderasyonBilgi, setModerasyonBilgi] = useState<{
+    flagged: boolean | null;
+    kategoriler: string[];
+    gecikmeMs: number;
+  } | null>(null);
 
   // Canlı (tahmini) sayaçlar — kesin usage gelene kadar gösterilir.
   const [canliPrompt, setCanliPrompt] = useState(0);
@@ -141,6 +155,8 @@ export default function Sayfa() {
     setToollar([]);
     setHatalar([]);
     setKullanim(null);
+    setDogrulamalar([]);
+    setModerasyonBilgi(null);
     setCanliPrompt(kabaTokenTahmini(metin)); // prompt için kaba başlangıç tahmini
     setCanliCompletion(0);
     setCalisiyor(true);
@@ -163,9 +179,22 @@ export default function Sayfa() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ metin, model }),
+        body: JSON.stringify({ metin, model, savunma, moderasyon }),
         signal: controller.signal,
       });
+
+      // Giriş doğrulaması başarısızsa (400) gövde SSE değil, JSON bir hata olayıdır.
+      if (!res.ok) {
+        const olay = await res.json().catch(() => null);
+        setHatalar((h) => [
+          ...h,
+          {
+            kind: olay?.kind ?? "bilinmeyen",
+            mesaj: olay?.mesaj ?? `Sunucu hatası (${res.status}).`,
+          },
+        ]);
+        return; // finally yine de süre/çalışma durumunu toplar
+      }
 
       if (!res.body) throw new Error("Sunucudan akış (stream) gelmedi.");
 
@@ -218,6 +247,15 @@ export default function Sayfa() {
               completionToken: olay.completionToken,
               toolTuru: olay.toolTuru,
               usd: olay.usd,
+            });
+          } else if (olay.tip === "dogrulama") {
+            // Çıkış doğrulaması: madde başına alıntı kaynakta bulundu mu (index eşli).
+            setDogrulamalar(olay.sonuclar);
+          } else if (olay.tip === "moderation") {
+            setModerasyonBilgi({
+              flagged: olay.flagged,
+              kategoriler: olay.kategoriler,
+              gecikmeMs: olay.gecikmeMs,
             });
           } else if (olay.tip === "hata") {
             setHatalar((h) => [...h, { kind: olay.kind, mesaj: olay.mesaj }]);
@@ -305,6 +343,10 @@ export default function Sayfa() {
         ham fetch + SSE — öğrenme amaçlı.){" "}
         <a className="baglanti" href="/deney">
           → Deney Modu (koşul karşılaştırma)
+        </a>{" "}
+        ·{" "}
+        <a className="baglanti" href="/saldiri">
+          → Saldırı Paneli (prompt injection)
         </a>
       </p>
 
@@ -406,6 +448,26 @@ export default function Sayfa() {
           </select>
         </label>
 
+        <label className="secim" title="Prompt injection savunması (metni etiketle, talimatları bulguya çevir)">
+          <input
+            type="checkbox"
+            checked={savunma}
+            onChange={(e) => setSavunma(e.target.checked)}
+            disabled={calisiyor}
+          />
+          Savunma
+        </label>
+
+        <label className="secim" title="OpenAI Moderation ile işaretle (engellemez), eklediği gecikmeyi ölç">
+          <input
+            type="checkbox"
+            checked={moderasyon}
+            onChange={(e) => setModerasyon(e.target.checked)}
+            disabled={calisiyor}
+          />
+          Moderation
+        </label>
+
         <span className="esne" />
 
         {!calisiyor ? (
@@ -431,6 +493,19 @@ export default function Sayfa() {
         </div>
       )}
 
+      {/* Moderation bandı (yalnızca moderation açıkken ve sonuç geldiğinde) */}
+      {moderasyonBilgi && (
+        <div className={`moderation-bant ${moderasyonBilgi.flagged ? "flagli" : ""}`}>
+          <b>Moderation:</b>{" "}
+          {moderasyonBilgi.flagged === null
+            ? "çalıştırılamadı"
+            : moderasyonBilgi.flagged
+            ? `işaretlendi (${moderasyonBilgi.kategoriler.join(", ") || "kategori yok"})`
+            : "temiz"}{" "}
+          · +{moderasyonBilgi.gecikmeMs} ms gecikme
+        </div>
+      )}
+
       {/* Sonuç kartları */}
       <div className="baslik-satir">
         <h2 style={{ fontSize: 16 }}>
@@ -444,7 +519,7 @@ export default function Sayfa() {
       ) : (
         <div className="kartlar">
           {maddeler.map((m, i) => (
-            <MaddeKarti key={i} m={m} />
+            <MaddeKarti key={i} m={m} dogrulandi={dogrulamalar[i]} />
           ))}
         </div>
       )}
@@ -467,10 +542,27 @@ export default function Sayfa() {
 
 // Tek bir madde kartı. Mod B'de alanlar eksik olabileceğinden hepsi opsiyonel
 // gibi ele alınır.
-function MaddeKarti({ m }: { m: MaddeGorunum }) {
+//
+// dogrulandi: çıkış doğrulaması sonucu.
+//   undefined -> henüz doğrulama gelmedi (akış sürüyor)
+//   true       -> alıntı kaynak metinde bulundu (sorun yok)
+//   false      -> alıntı kaynakta BULUNAMADI -> kırmızı uyarı rozeti göster
+//                 (madde SİLİNMEZ; saldırının izini gizlememek için bilinçli karar).
+function MaddeKarti({
+  m,
+  dogrulandi,
+}: {
+  m: MaddeGorunum;
+  dogrulandi?: boolean;
+}) {
   const seviye = (m.riskSeviyesi as string) ?? "orta";
   return (
     <div className={`kart ${seviye}`}>
+      {dogrulandi === false && (
+        <div className="alinti-uyari" title="Alıntı kaynak metinde birebir bulunamadı; uydurma olabilir.">
+          ⚠ Alıntı kaynak metinde doğrulanamadı
+        </div>
+      )}
       <div className="ust">
         <span className={`risk-etiket ${seviye}`}>
           {RISK_ETIKET[seviye] ?? seviye}

@@ -464,3 +464,171 @@ table.deney-tablo td.hayir {
   text-align: center;
   padding: 16px 0;
 }
+
+/* -------------------------------------------------------------------------- */
+/* SAVUNMA — çıkış doğrulaması rozeti + moderation bandı (ana sayfa)           */
+/* -------------------------------------------------------------------------- */
+
+/* Kartın üstünde "alıntı doğrulanamadı" kırmızı uyarı rozeti */
+.kart .alinti-uyari {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(255, 92, 92, 0.14);
+  border: 1px solid rgba(255, 92, 92, 0.5);
+  color: var(--yuksek);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Moderation sonucu bandı */
+.moderation-bant {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.moderation-bant.flagli {
+  background: rgba(255, 92, 92, 0.08);
+  border-color: rgba(255, 92, 92, 0.45);
+  color: var(--yuksek);
+}
+
+/* -------------------------------------------------------------------------- */
+/* SALDIRI PANELİ (app/saldiri)                                                */
+/* -------------------------------------------------------------------------- */
+
+/* Payload editör kartları */
+.saldiri-kartlar {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 12px 0;
+}
+@media (max-width: 900px) {
+  .saldiri-kartlar {
+    grid-template-columns: 1fr;
+  }
+}
+
+.saldiri-kart {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 10px;
+  padding: 12px 14px;
+  min-width: 0;
+}
+.saldiri-kart.dolu {
+  border-left-color: var(--accent);
+}
+.saldiri-kart.bos {
+  border-left-color: var(--border);
+  opacity: 0.9;
+}
+
+.saldiri-ust {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.saldiri-ust .esne {
+  flex: 1;
+}
+.saldiri-id {
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--accent);
+}
+.saldiri-ad {
+  font-weight: 600;
+  font-size: 14px;
+}
+.saldiri-rozet {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.saldiri-rozet.dolu {
+  background: rgba(46, 204, 113, 0.15);
+  color: var(--dusuk);
+}
+.saldiri-rozet.bos {
+  background: rgba(154, 163, 178, 0.15);
+  color: var(--muted);
+}
+
+.saldiri-amac,
+.saldiri-kriter {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+.saldiri-amac b,
+.saldiri-kriter b {
+  color: var(--text);
+}
+
+textarea.saldiri-payload {
+  min-height: 90px;
+  font-size: 12px;
+}
+
+/* İlerleme çubuğu */
+.ilerleme-dis {
+  height: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 8px 0 16px;
+}
+.ilerleme-ic {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+/* Çalıştırma onay kutusu */
+.onay-kutu {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 12px 0;
+}
+.onay-baslik {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.onay-satir {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+/* Saldırı ham tablosunda özel hücreler */
+.saldiri-tablo td.arg-hucre {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+table.deney-tablo td.uyari {
+  color: var(--yuksek);
+  font-weight: 700;
+}
+table.deney-tablo tr.temiz-satir td {
+  color: var(--muted);
+}
+table.deney-tablo tr.temiz-satir td:nth-child(2) {
+  font-style: italic;
+}
