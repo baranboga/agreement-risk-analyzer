@@ -503,6 +503,36 @@ table.deney-tablo td.hayir {
 /* -------------------------------------------------------------------------- */
 
 /* Payload editör kartları */
+/* Örnek/temiz referans metin (açılır kapanır) */
+.referans-detay {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 10px 14px;
+  margin: 12px 0;
+}
+.referans-ozet {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.referans-metin {
+  margin: 8px 0 0;
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--text);
+}
+
 .saldiri-kartlar {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -529,6 +559,17 @@ table.deney-tablo td.hayir {
 .saldiri-kart.bos {
   border-left-color: var(--border);
   opacity: 0.9;
+}
+/* Seçimi kaldırılmış (koşuya alınmayacak) kart soluk görünür. */
+.saldiri-kart.secili-degil {
+  opacity: 0.55;
+}
+.saldiri-secim {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex: none;
 }
 
 .saldiri-ust {
@@ -626,9 +667,390 @@ table.deney-tablo td.uyari {
   color: var(--yuksek);
   font-weight: 700;
 }
+/* "kısmi" = modelin normal kısaltması (gürültü) -> alarm değil, soluk amber. */
+table.deney-tablo td.kismi-hucre {
+  color: var(--orta);
+}
 table.deney-tablo tr.temiz-satir td {
   color: var(--muted);
 }
 table.deney-tablo tr.temiz-satir td:nth-child(2) {
   font-style: italic;
+}
+
+/* ===== PROMPT ŞEFFAFLIĞI ===================================================== */
+
+/* "Savunma nedir?" — savunmasız / savunmalı sistem promptu diff (yan yana) */
+.savunma-detay {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 10px 14px;
+  margin: 12px 0;
+}
+.savunma-diff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+@media (max-width: 900px) {
+  .savunma-diff {
+    grid-template-columns: 1fr;
+  }
+}
+.savunma-sutun {
+  min-width: 0;
+}
+.savunma-sutun-baslik {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.diff-kod {
+  max-height: 360px;
+  overflow: auto;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.diff-satir {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+}
+.diff-satir.eklendi {
+  background: rgba(46, 204, 113, 0.16);
+  color: var(--dusuk);
+  border-radius: 3px;
+}
+.diff-eklendi-ornek {
+  background: rgba(46, 204, 113, 0.16);
+  color: var(--dusuk);
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+/* Teyit satırı + tablo içi prompt görünümü */
+.prompt-teyit {
+  margin-top: 6px;
+}
+.mini-buton {
+  font-size: 11px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+table.deney-tablo tr.prompt-satir td {
+  background: var(--panel-2);
+  padding: 0;
+}
+.prompt-goruntu {
+  padding: 12px 14px;
+}
+.prompt-not {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.prompt-mesaj {
+  margin-bottom: 10px;
+}
+.prompt-rol {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  margin-bottom: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.prompt-icerik {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+/* Çıktı görünürlüğü — tam sonuç + doğrulama teşhisi + karşılaştırma */
+.cikti-goruntu {
+  padding: 12px 14px;
+}
+.cikti-madde {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.cikti-madde-ust {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.cikti-madde-ust .esne {
+  flex: 1;
+}
+.cikti-madde-no {
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--muted);
+}
+.risk-rozet {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.risk-dusuk {
+  color: var(--dusuk);
+}
+.risk-orta {
+  color: var(--orta);
+}
+.risk-yuksek {
+  color: var(--yuksek);
+}
+.dogr-rozet {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+.dogr-tam {
+  background: rgba(46, 204, 113, 0.15);
+  color: var(--dusuk);
+}
+.dogr-kismi {
+  background: rgba(241, 196, 15, 0.15);
+  color: var(--orta);
+}
+.dogr-yok {
+  background: rgba(255, 92, 92, 0.15);
+  color: var(--yuksek);
+}
+.cikti-alan {
+  font-size: 13px;
+  margin-bottom: 3px;
+  line-height: 1.45;
+}
+.cikti-alan b {
+  color: var(--muted);
+  font-weight: 600;
+}
+.dogr-teshis {
+  margin-top: 8px;
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+}
+.dogr-teshis-baslik {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.dogr-yanyana {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 900px) {
+  .dogr-yanyana {
+    grid-template-columns: 1fr;
+  }
+}
+.dogr-etiket {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.dogr-kod {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.cikti-kars {
+  margin: 12px 0;
+}
+table.kars-tablo {
+  margin-top: 6px;
+}
+table.kars-tablo td.kars-alinti {
+  max-width: 420px;
+  font-size: 12px;
+}
+table.deney-tablo tr.kars-vurgu td {
+  background: rgba(255, 92, 92, 0.1);
+}
+.cikti-ham {
+  margin-top: 12px;
+}
+
+/* ===== OKUNURLUK: baseline bandı, kanıt vurgusu, band-dışı, karşılaştırma ===== */
+
+/* Baseline (gürültü) bandı kutusu */
+.bant-kutu {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 12px 16px;
+  margin: 12px 0;
+}
+.bant-baslik {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.bant-izgara {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .bant-izgara {
+    grid-template-columns: 1fr;
+  }
+}
+.bant-sutun {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  padding: 8px 12px;
+}
+.bant-sutun-baslik {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.bant-liste {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.bant-not {
+  margin: 8px 0 0;
+}
+
+/* Kanıt sütunu grup başlığı satırı */
+table.deney-tablo tr.kanit-satir td {
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-top: 2px solid var(--border);
+}
+.kanit-etiket {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+/* Kanıt sütunu hücre vurgusu / diğerleri sönük */
+table.deney-tablo td.kanit-vurgu {
+  background: rgba(79, 140, 255, 0.14);
+  font-weight: 700;
+}
+table.deney-tablo td.kanit-sonuk {
+  opacity: 0.45;
+}
+
+/* Band-dışı ok/işaret */
+.bant-ok {
+  color: var(--yuksek);
+  font-weight: 700;
+}
+
+/* Yan yana karşılaştırma */
+.kars-izgara {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+@media (max-width: 900px) {
+  .kars-izgara {
+    grid-template-columns: 1fr;
+  }
+}
+.kars-kart {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 10px 12px;
+}
+.kars-kart-baslik {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kars-kosullar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.kars-kosul {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  padding: 8px 10px;
+}
+.kars-kosul-baslik {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.kars-band {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.kars-cipler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.kars-cip {
+  min-width: 26px;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.kars-cip.disi {
+  border-color: var(--yuksek);
+  color: var(--yuksek);
+  font-weight: 700;
+  background: rgba(255, 92, 92, 0.1);
 }

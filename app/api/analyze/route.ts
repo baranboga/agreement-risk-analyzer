@@ -107,6 +107,21 @@ export async function POST(req: Request) {
       let toplamCompletion = 0;
       let toolTuru = 0; // toplam kaç tool çalıştı
 
+      // -----------------------------------------------------------------------
+      // TEŞHİS NOTU (tool sayacı 0 sorunu) — SAYAÇ HATASI DEĞİL:
+      //   • tool'lar isteğe EKLENİYOR (openAICagir -> body.tools = toolTanimlari),
+      //   • streaming tool_delta'ları index'e göre toolCallBirikim'de doğru
+      //     birleşiyor, sayaç (toolTuru) ve "tool" SSE olayı yalnızca
+      //     bitisSebebi === "tool_calls" dalında artıyor; bu dal doğru yerde.
+      //   => 0 sayısı, modelin finish_reason "tool_calls" ÜRETMEMESİNDEN geliyor,
+      //      yani model sureHesapla'yı ÇAĞIRMIYOR. En olası neden: response_format
+      //      json_schema (strict:true) modeli tek turda nihai JSON'a yönlendiriyor;
+      //      prompt da tool'u "gerekiyorsa" diyerek opsiyonel bırakıyor, model de
+      //      süreyi sureIfadesi metnine yazıp aracı atlıyor.
+      //   Bu MODEL/CONFIG davranışıdır; düzeltmek prompt/response_format'ı
+      //   değiştirmeyi gerektirir ve baseline'ı bozar -> BİLİNÇLİ OLARAK DEĞİŞMEDİ.
+      // -----------------------------------------------------------------------
+
       // Sohbet geçmişi (tool döngüsünde büyür). Kullanıcı içeriği savunma açıksa
       // <SOZLESME_METNI> ile sarılmıştır.
       const messages: ChatMesaji[] = [
@@ -199,6 +214,19 @@ export async function POST(req: Request) {
               bitisSebebi = p.sebep;
             }
           }
+
+          // [TEŞHİS — geçici] Her turda finish_reason'ı ve birikmiş tool_call
+          // sayısını, ayrıca sayacın O ANKİ (henüz ARTMAMIŞ) değerini bas.
+          //   - toolCall_slot > 0 ama finish != tool_calls -> parça geldi ama
+          //     model tamamlamadı (beklenmez).
+          //   - toolCall_slot == 0 ve finish == stop -> model hiç tool istemedi.
+          // Sayaç (toolTuru) yalnızca AŞAĞIDAKİ tool_calls dalında, birleştirmeden
+          // SONRA artar; bu log artıştan ÖNCEki değeri gösterir.
+          console.error(
+            `[TESHIS] tur=${tur} finish_reason=${JSON.stringify(bitisSebebi)} ` +
+              `toolCall_slot=${Object.keys(toolCallBirikim).length} ` +
+              `toolTuru(artıştan once)=${toolTuru}`
+          );
 
           // ----- Tur bitti: model tool mu istiyor, yoksa cevap mı verdi? -----
           if (bitisSebebi === "tool_calls") {

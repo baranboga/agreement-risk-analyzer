@@ -37,6 +37,11 @@
 export function normalizeMetin(s: string): string {
   return (
     s
+      // Unicode uyumluluk + kanonik birleştirme. Bu, "İ" yerine "I + birleşik
+      // nokta", ayrışmış aksanlı harfler, tam-genişlik rakamlar, ligatürler gibi
+      // GÖRSEL OLARAK AYNI ama kod olarak farklı biçimleri tek forma indirger;
+      // böylece modelin kopyaladığı metin ile kaynak, bu farklardan ötürü sapmaz.
+      .normalize("NFKC")
       // Türkçe'ye özgü harfleri (büyük + küçük) ASCII karşılıklarına indir.
       // NOT: Bunu toLowerCase'den ÖNCE yapıyoruz; "İ".toLowerCase() JS'te
       // "i̇" (i + birleşik nokta) üretip eşleşmeyi bozabiliyor, o tuzağa düşmeyelim.
@@ -55,12 +60,137 @@ export function normalizeMetin(s: string): string {
       .replace(/ç/g, "c")
       // Kalan büyük harfleri küçült.
       .toLowerCase()
-      // Harf/rakam DIŞINDAKİ her şeyi (noktalama, tırnak, satır sonu, çoklu boşluk)
-      // TEK boşluğa indir; sonra baş/son boşluğu at. Böylece "...", ".", ",", "\n"
-      // gibi ufak farklar eşleşmeyi bozmaz.
+      // Birleşik/combining işaretleri (aksan, İ'nin ayrık noktası vb.) at.
+      // NFKC sonrası kalan \p{M} parçaları eşleşmeyi bozmasın diye burada siliyoruz.
+      .replace(/\p{M}+/gu, "")
+      // Harf/rakam DIŞINDAKİ her şeyi (noktalama, tüm tırnak çeşitleri " " ' ' « »,
+      // tire çeşitleri - – —, üç nokta … / ..., satır sonu, çoklu boşluk ve
+      // sayı/noktalama arası boşluk) TEK boşluğa indir; sonra baş/son boşluğu at.
       .replace(/[^\p{L}\p{N}]+/gu, " ")
       .trim()
   );
+}
+
+// -----------------------------------------------------------------------------
+// GEVŞETİLMİŞ (3 SEVİYELİ) DOĞRULAMA — yalnızca TEŞHİS/GÖRÜNÜRLÜK içindir.
+//
+// Sunucu tarafı ölçüm (maddeleriDogrula -> boolean) DEĞİŞMEZ; bu katman ek olarak
+// "tam | kismi | bulunamadi" seviyesi ve neyin neden uymadığını gösterecek teşhis
+// verisi üretir. Böylece "temiz koşuda alıntı doğrulama dışı çıktı" durumunda
+// SEBEBİ (model alıntıyı kısaltmış mı, uydurmuş mu) gözle görülebilir.
+//
+// - "tam"        : normalize edilmiş alıntı, normalize kaynağın ALT DİZGİSİ.
+// - "kismi"      : alıntının kelimeleri kaynakta SIRAYLA (aralıklı olabilir) geçiyor
+//                  — ör. model "(otuz)" gibi bir parçayı atlamış ya da … ile kısaltmış.
+// - "bulunamadi" : ikisi de tutmuyor (alıntı büyük olasılıkla uydurma).
+// -----------------------------------------------------------------------------
+
+export type DogrulamaSeviyesi = "tam" | "kismi" | "bulunamadi";
+
+export type DogrulamaTeshis = {
+  seviye: DogrulamaSeviyesi;
+  normalizeAlinti: string; // normalize edilmiş alıntı
+  normalizeKaynakParca: string; // kaynakta en yakın/eşleşen normalize parça
+  eslesenKelime: number; // kaç alıntı kelimesi kaynakta bulundu
+  toplamKelime: number; // alıntının toplam kelime sayısı
+};
+
+/** Normalize edip boşluğa göre kelimelere böler (boşsa boş dizi). */
+export function normalizeKelimeler(s: string): string[] {
+  const n = normalizeMetin(s);
+  return n.length ? n.split(" ") : [];
+}
+
+// qWords, sWords içinde SIRAYLA (aralıklı olabilir) geçiyorsa ilk/son eşleşme
+// index'lerini döndürür; yoksa null. Greedy: ilk uyanı tutar (teşhis için yeter).
+function altDiziAraligi(
+  sWords: string[],
+  qWords: string[]
+): { bas: number; son: number } | null {
+  if (qWords.length === 0) return null;
+  let qi = 0;
+  let bas = -1;
+  for (let si = 0; si < sWords.length; si++) {
+    if (sWords[si] === qWords[qi]) {
+      if (qi === 0) bas = si;
+      qi++;
+      if (qi === qWords.length) return { bas, son: si };
+    }
+  }
+  return null;
+}
+
+// Alıntı uzunluğunda kayan pencere içinde EN ÇOK ortak kelimeyi barındıran
+// kaynak parçasını bulur (bulunamadı durumunda "en yakın parça"yı göstermek için).
+function enYakinPencere(
+  sWords: string[],
+  qWords: string[]
+): { parca: string; ortak: number } {
+  if (qWords.length === 0 || sWords.length === 0) {
+    return { parca: sWords.slice(0, 20).join(" "), ortak: 0 };
+  }
+  const qSet = new Set(qWords);
+  const pencere = Math.min(qWords.length, sWords.length);
+  let enIyiBas = 0;
+  let enIyiOrtak = -1;
+  for (let i = 0; i + pencere <= sWords.length; i++) {
+    let ortak = 0;
+    for (let j = i; j < i + pencere; j++) if (qSet.has(sWords[j])) ortak++;
+    if (ortak > enIyiOrtak) {
+      enIyiOrtak = ortak;
+      enIyiBas = i;
+    }
+  }
+  return {
+    parca: sWords.slice(enIyiBas, enIyiBas + pencere).join(" "),
+    ortak: Math.max(0, enIyiOrtak),
+  };
+}
+
+/**
+ * Bir alıntıyı 3 seviyede doğrular ve teşhis verisi döndürür (yalnızca görünürlük).
+ */
+export function alintiDogrulaDetay(
+  alinti: string,
+  kaynakMetin: string
+): DogrulamaTeshis {
+  const qn = normalizeMetin(alinti);
+  const sn = normalizeMetin(kaynakMetin);
+  const qWords = qn.length ? qn.split(" ") : [];
+  const sWords = sn.length ? sn.split(" ") : [];
+
+  // 1) TAM: birebir alt dizgi.
+  if (qn.length > 0 && sn.includes(qn)) {
+    return {
+      seviye: "tam",
+      normalizeAlinti: qn,
+      normalizeKaynakParca: qn,
+      eslesenKelime: qWords.length,
+      toplamKelime: qWords.length,
+    };
+  }
+
+  // 2) KISMI: kelimeler kaynakta sırayla geçiyor mu?
+  const aralik = altDiziAraligi(sWords, qWords);
+  if (aralik) {
+    return {
+      seviye: "kismi",
+      normalizeAlinti: qn,
+      normalizeKaynakParca: sWords.slice(aralik.bas, aralik.son + 1).join(" "),
+      eslesenKelime: qWords.length,
+      toplamKelime: qWords.length,
+    };
+  }
+
+  // 3) BULUNAMADI: en yakın pencereyi göster.
+  const yakin = enYakinPencere(sWords, qWords);
+  return {
+    seviye: "bulunamadi",
+    normalizeAlinti: qn,
+    normalizeKaynakParca: yakin.parca,
+    eslesenKelime: yakin.ortak,
+    toplamKelime: qWords.length,
+  };
 }
 
 /**

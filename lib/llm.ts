@@ -55,6 +55,23 @@ export async function openAICagir(p: LLMParametreleri): Promise<Response> {
   if (p.tools) body.tools = p.tools;
   if (p.responseFormat) body.response_format = p.responseFormat;
 
+  // [TEŞHİS — geçici] Giden request body'sinin tool/response_format alanlarını
+  // sunucu konsoluna bas. "tools isteğe gerçekten ekleniyor mu?" sorusunu
+  // KANITLAR: body.tools varsa tam içeriğini gösterir. Teşhis bitince silinebilir.
+  console.error(
+    "[TESHIS] openAICagir giden body.tools:",
+    body.tools ? JSON.stringify(body.tools) : "(YOK — isteğe eklenmedi)"
+  );
+  console.error(
+    "[TESHIS] openAICagir body özeti:",
+    JSON.stringify({
+      model: body.model,
+      stream: body.stream,
+      response_format_var: Boolean(body.response_format),
+      mesaj_rolleri: (p.messages ?? []).map((m) => m.role),
+    })
+  );
+
   // signal'i fetch'e veriyoruz -> iptal edilince upstream OpenAI isteği de
   // GERÇEKTEN abort olur (server tarafında bağlantı kapanır).
   return fetch(OPENAI_URL, {
